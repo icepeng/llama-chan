@@ -7,12 +7,7 @@ use std::{convert::Infallible, io::Write};
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
-fn greet(name: &str) -> String {
-    env_logger::builder()
-        .filter_level(log::LevelFilter::Info)
-        .parse_default_env()
-        .init();
-
+fn greet(model_path: &str) -> String {
     let inference_params = InferenceParameters {
         n_threads: num_cpus::get_physical() as i32,
         n_batch: 8,
@@ -28,7 +23,6 @@ fn greet(name: &str) -> String {
         // temp: args.temp,
     };
 
-    let model_path = "workspace/llama.cpp/models/7B/ggml-model-q4_0.bin";
     let num_ctx_tokens = 512;
     let num_predict: Option<usize> = None;
     let repeat_last_n = 64;
@@ -118,10 +112,15 @@ fn greet(name: &str) -> String {
         Err(llama_rs::InferenceError::UserCallback(_)) => unreachable!("cannot fail"),
     }
 
-    format!("Hello, {}! You've been greeted from Rust!", name)
+    format!("Hello?")
 }
 
 fn main() {
+    env_logger::builder()
+        .filter_level(log::LevelFilter::Info)
+        .parse_default_env()
+        .init();
+
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![greet])
         .run(tauri::generate_context!())
