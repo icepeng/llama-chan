@@ -1316,6 +1316,7 @@ name = "llama-chan"
 version = "0.0.0"
 dependencies = [
  "env_logger",
+ "lazy_static",
  "llama-rs",
  "log",
  "num_cpus",

@@ -1,38 +1,43 @@
 import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Event, listen } from "@tauri-apps/api/event";
 import "./App.css";
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
-
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-    setGreetMsg(await invoke("greet", { name }));
-  }
+  const [message, setMessage] = useState("");
+  const [response, setResponse] = useState("");
 
   async function openModel() {
     const modelPath = await open();
-    await invoke("greet", { modelPath });
+    await invoke("load_model", { modelPath });
   }
+
+  async function sendMessage() {
+    await invoke("send_message", { message });
+  }
+
+  useEffect(() => {
+    const unlisten = listen("message", (event: Event<string>) => {
+      console.log(event.payload);
+      setResponse((response) => response + event.payload);
+    });
+
+    return () => {
+      unlisten.then((f) => f());
+    };
+  }, []);
 
   return (
     <div className="container">
-      <h1>Welcome!</h1>
+      <h1>LLaMA-Chan</h1>
 
       <div className="row">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            openModel();
-          }}
-        >
-          <input id="greet-input" onChange={(e) => setName(e.currentTarget.value)} placeholder="Enter a name..." />
-          <button type="submit">Greet</button>
-        </form>
+        <button onClick={openModel}>Open Model...</button>
+        <input id="greet-input" onChange={(e) => setMessage(e.currentTarget.value)} placeholder="Enter a message..." />
+        <button onClick={sendMessage}>Send Message</button>
       </div>
-      <p>{greetMsg}</p>
+      <textarea readOnly value={response} style={{ height: 400 }}></textarea>
     </div>
   );
 }
