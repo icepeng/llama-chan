@@ -6,7 +6,7 @@ use rand::SeedableRng;
 use std::{convert::Infallible, io::Write, sync::Mutex};
 use tauri::Manager;
 
-static NUM_CTX_TOKENS: usize = 512;
+static NUM_CTX_TOKENS: usize = 2048;
 static REPEAT_LAST_N: usize = 64;
 static NUM_PREDICT: Option<usize> = None;
 
