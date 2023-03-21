@@ -1,26 +1,61 @@
+import { Box, Button, Input, Stack, Divider } from "@chakra-ui/react";
 import { open } from "@tauri-apps/api/dialog";
+import { Event, listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/tauri";
 import { useEffect, useState } from "react";
-import { Event, listen } from "@tauri-apps/api/event";
 import "./App.css";
 
+interface Message {
+  from: "user" | "bot";
+  message: string;
+}
+
+function buildPrompt(message: string) {
+  return `Below is an instruction that describes a task. Write a response that appropriately completes the request.
+
+### Instruction:
+
+${message}
+
+### Response:`;
+}
+
+function parseResponse(message: string) {
+  if (!message.includes("### Response:")) {
+    return "";
+  }
+
+  return message.split("### Response:")[1].replace("[end of text]", "").trim();
+}
+
 function App() {
+  const [isModelLoaded, setIsModelLoaded] = useState(false);
   const [message, setMessage] = useState("");
-  const [response, setResponse] = useState("");
+  const [history, setHistory] = useState<Message[]>([]);
 
   async function openModel() {
     const modelPath = await open();
     await invoke("load_model", { modelPath });
+    setIsModelLoaded(true);
   }
 
   async function sendMessage() {
-    await invoke("send_message", { message });
+    if (!isModelLoaded) {
+      return;
+    }
+
+    setMessage("");
+    setHistory((history) => [...history, { from: "user", message }, { from: "bot", message: "" }]);
+    await invoke("send_message", { message: buildPrompt(message) });
   }
 
   useEffect(() => {
     const unlisten = listen("message", (event: Event<string>) => {
-      console.log(event.payload);
-      setResponse((response) => response + event.payload);
+      setHistory((history) => {
+        const lastResponse = history.at(-1)!;
+        const message = lastResponse.message + event.payload;
+        return [...history.slice(0, -1), { ...lastResponse, message }];
+      });
     });
 
     return () => {
@@ -29,16 +64,27 @@ function App() {
   }, []);
 
   return (
-    <div className="container">
-      <h1>LLaMA-Chan</h1>
-
-      <div className="row">
-        <button onClick={openModel}>Open Model...</button>
-        <input id="greet-input" onChange={(e) => setMessage(e.currentTarget.value)} placeholder="Enter a message..." />
-        <button onClick={sendMessage}>Send Message</button>
-      </div>
-      <textarea readOnly value={response} style={{ height: 400 }}></textarea>
-    </div>
+    <Stack height="100vh" direction="column">
+      <Box padding={4}>
+        <Button onClick={openModel}>Open Model...</Button>
+      </Box>
+      <Stack flex="1 1 auto">
+        {history.map(({ from, message }, i) => (
+          <Box backgroundColor={from === "user" ? "gray.50" : "gray.100"} padding={4} key={i}>
+            {from}: {from === "user" ? message : parseResponse(message)}
+          </Box>
+        ))}
+      </Stack>
+      <Stack padding={4} direction="row">
+        <Input
+          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+          value={message}
+          onChange={(e) => setMessage(e.currentTarget.value)}
+          placeholder="Enter a message..."
+        />
+        <Button onClick={sendMessage}>Send</Button>
+      </Stack>
+    </Stack>
   );
 }
 
