@@ -74,7 +74,7 @@ function App() {
           Open Model...
         </button>
       </div>
-      <div className="flex-auto flex flex-col-reverse  mb-20">
+      <div className="flex-auto flex flex-col justify-end mb-20">
         {history.map(({ from, message }, i) => (
           <React.Fragment key={i}>
             {from === "user" ? (
