@@ -19,6 +19,16 @@ pub struct Llama {
 
 unsafe impl Send for Llama {}
 
+#[derive(serde::Deserialize)]
+#[derive(Debug)]
+struct DeserializedInferenceParameters {
+    n_batch: usize,
+    top_k: usize,
+    top_p: f32,
+    repeat_penalty: f32,
+    temp: f32,
+}
+
 impl Llama {
     pub fn load_model(&mut self, model_path: &str, num_ctx_tokens: usize) {
         let (model, vocab) =
@@ -153,20 +163,21 @@ fn load_model(model_path: &str, state: tauri::State<LlamaState>) {
 #[tauri::command]
 async fn send_message(
     message: &str,
+    inference_parameters: DeserializedInferenceParameters,
     state: tauri::State<'_, LlamaState>,
     app_handle: tauri::AppHandle,
 ) -> Result<(), ()> {
-    let inference_parameters = InferenceParameters {
+    let params = InferenceParameters {
         n_threads: num_cpus::get_physical() as i32,
-        n_batch: 8,
-        top_k: 40,
-        top_p: 1.0,
-        repeat_penalty: 1.18,
-        temp: 0.7,
+        n_batch: inference_parameters.n_batch,
+        top_k: inference_parameters.top_k,
+        top_p: inference_parameters.top_p,
+        repeat_penalty: inference_parameters.repeat_penalty,
+        temp: inference_parameters.temp,
     };
 
     let result = state.0.lock().unwrap().inference_with_prompt(
-        &inference_parameters,
+        &params,
         message,
         NUM_PREDICT,
         app_handle,
