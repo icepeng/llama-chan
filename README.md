@@ -17,8 +17,9 @@ Download `llama-chan-win.zip` from the latest release. Other platforms will be r
 #### Building from Source
 
 1. Follow the [prerequisites](https://tauri.app/v1/guides/getting-started/prerequisites) from Tauri.
-2. `yarn tauri build` in shell.
-3. builds are generated in `src-tauri/target/release/`.
+2. `yarn install` in shell.
+3. `yarn tauri build` in shell.
+4. builds are generated in `src-tauri/target/release/`.
 
 ### Download models
 
